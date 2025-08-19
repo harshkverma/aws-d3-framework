@@ -1,0 +1,99 @@
+{
+  // Users and their role mappings (Suits)
+
+  "users": {
+    // Superusers with full CRUD permissions
+    "harvey":   { "roles": ["select", "insert", "update", "delete"] },
+    "jessica":  { "roles": ["select", "insert", "update", "delete"] },
+    "louis":    { "roles": ["select", "insert", "update", "delete"] },
+
+    // Aurora-specific users
+    "mike":     { "roles": ["aurora_select_inst_a"] },
+    "rachel":   { "roles": ["aurora_select_orders_only", "aurora_select_inst_b_audit"] },
+    "katrina":  { "roles": ["aurora_update", "aurora_select_inst_b_audit"] },
+
+    // S3-specific users
+    "donna":      { "roles": ["s3_select_finance"] },
+    "benjamin":   { "roles": ["s3_select"] },
+    "gretchen":   { "roles": ["s3_select", "aurora_select_orders_columns"] },
+
+    // Snowflake-specific users
+    "samantha":   { "roles": ["aurora_select", "snowflake_select"] },
+    "daniel":     { "roles": ["snowflake_insert", "snowflake_update"] },
+    "alex":       { "roles": ["snowflake_select_customers_basic"] },
+    "robertzane": { "roles": ["snowflake_select"] },
+
+    // DynamoDB-specific users
+    "jeff":     { "roles": ["dynamodb_update_orders_customers"] },
+    "sheila":   { "roles": ["dynamodb_select"] }
+  },
+
+  // Role definitions and grants
+  // Each role maps to one or more grants, which specify:
+  //   - allowed actions
+  //   - applicable data_source
+  //   - permitted instances and tables
+  //   - optional column-level constraints
+
+  "roles": {
+    // Generic full CRUD roles
+    "select": { "grants": [ { "actions": ["select"], "resources": { "data_source": "*", "instances": ["*"], "tables": ["*"] } } ] },
+    "insert": { "grants": [ { "actions": ["insert"], "resources": { "data_source": "*", "instances": ["*"], "tables": ["*"] } } ] },
+    "update": { "grants": [ { "actions": ["update"], "resources": { "data_source": "*", "instances": ["*"], "tables": ["*"] } } ] },
+    "delete": { "grants": [ { "actions": ["delete"], "resources": { "data_source": "*", "instances": ["*"], "tables": ["*"] } } ] },
+
+    // Aurora roles
+    "aurora_select": { "grants": [ { "actions": ["select"], "resources": { "data_source": "aurora", "instances": ["*"], "tables": ["*"] } } ] },
+    "aurora_update": { "grants": [ { "actions": ["update"], "resources": { "data_source": "aurora", "instances": ["*"], "tables": ["*"] } } ] },
+
+    // Aurora: instance and table-level restrictions
+    "aurora_select_inst_a":       { "grants": [ { "actions": ["select"], "resources": { "data_source": "aurora", "instances": ["inst-a"], "tables": ["*"] } } ] },
+    "aurora_select_orders_only":  { "grants": [ { "actions": ["select"], "resources": { "data_source": "aurora", "instances": ["*"], "tables": ["orders"] } } ] },
+    "aurora_select_inst_b_audit": { "grants": [ { "actions": ["select"], "resources": { "data_source": "aurora", "instances": ["inst-b"], "tables": ["inst-b.audit"] } } ] },
+
+    // Aurora: column-level restrictions on orders table
+    "aurora_select_orders_columns": {
+      "grants": [
+        {
+          "actions": ["select"],
+          "resources": {
+            "data_source": "aurora",
+            "instances": ["inst-a"],
+            "tables": ["orders"],
+            "columns_by_table": [
+              { "table": "orders", "columns": ["id", "amount"] }
+            ]
+          }
+        }
+      ]
+    },
+
+    // Snowflake roles
+    "snowflake_select": { "grants": [ { "actions": ["select"], "resources": { "data_source": "snowflake", "instances": ["*"], "tables": ["*"] } } ] },
+    "snowflake_insert": { "grants": [ { "actions": ["insert"], "resources": { "data_source": "snowflake", "instances": ["*"], "tables": ["*"] } } ] },
+    "snowflake_update": { "grants": [ { "actions": ["update"], "resources": { "data_source": "snowflake", "instances": ["*"], "tables": ["*"] } } ] },
+
+    // Snowflake: restricted to customers table, with column-level constraints
+    "snowflake_select_customers_basic": {
+      "grants": [
+        {
+          "actions": ["select"],
+          "resources": {
+            "data_source": "snowflake",
+            "instances": ["*"],
+            "tables": ["customers"],
+            "columns_allow": ["id", "email"]
+          }
+        }
+      ]
+    },
+
+    // DynamoDB roles
+    "dynamodb_select": { "grants": [ { "actions": ["select"], "resources": { "data_source": "dynamodb", "instances": ["*"], "tables": ["*"] } } ] },
+    "dynamodb_update_orders_customers": { "grants": [ { "actions": ["update"], "resources": { "data_source": "dynamodb", "instances": ["*"], "tables": ["orders", "customers"] } } ] },
+
+    // S3 roles
+    "s3_select":         { "grants": [ { "actions": ["select"], "resources": { "data_source": "s3", "instances": ["*"], "tables": ["*"] } } ] },
+    "s3_select_finance": { "grants": [ { "actions": ["select"], "resources": { "data_source": "s3", "instances": ["prod"], "tables": ["finance/*"] } } ] }
+  }
+}

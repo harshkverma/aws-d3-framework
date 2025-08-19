@@ -1,0 +1,179 @@
+// 01 - Admin generic SELECT allowed (aurora, no per-request policy)
+// Expected: Allowed
+{
+  "user_id": "harvey",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "table": "users", "query_sql": "SELECT 1" }
+}
+
+// 02 - Snowflake SELECT allowed (DB-scoped)
+// Expected: Allowed
+{
+  "user_id": "samantha",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "snowflake", "table": "dim_users", "query_sql": "SELECT 1" }
+}
+
+// 03 - Method/type mismatch denied (GET vs UPDATE)
+// Expected: Denied
+{
+  "user_id": "harvey",
+  "request": { "method": "GET" },
+  "query": { "query_type": "UPDATE", "data_source": "aurora", "table": "users", "query_sql": "UPDATE users SET x=1" }
+}
+
+// 04 - Role missing denied (UPDATE without update role)
+// Expected: Denied
+{
+  "user_id": "rachel",
+  "request": { "method": "PUT" },
+  "query": { "query_type": "UPDATE", "data_source": "aurora", "table": "users", "query_sql": "UPDATE users SET x=1" }
+}
+
+// 05 - Instance not allowed denied (policy allows inst-a only; request to inst-b)
+// Expected: Denied
+{
+  "user_id": "mike",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "instance": "inst-b", "table": "users", "query_sql": "SELECT * FROM users" },
+  "policy": { "instances_allow": { "aurora": ["inst-a"] } }
+}
+
+// 06 - Instance allowed allowed (policy allows inst-a; request to inst-a)
+// Expected: Allowed
+{
+  "user_id": "mike",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "instance": "inst-a", "table": "users", "query_sql": "SELECT * FROM users" },
+  "policy": { "instances_allow": { "aurora": ["inst-a"] } }
+}
+
+// 07 - Table not allowed denied (policy allows orders only; request users)
+// Expected: Denied
+{
+  "user_id": "harvey",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "instance": "inst-a", "table": "users", "query_sql": "SELECT * FROM users" },
+  "policy": { "tables_allow": { "aurora": ["orders"] } }
+}
+
+// 08 - Table allowed (plain) allowed (policy allows orders; request orders)
+// Expected: Allowed
+{
+  "user_id": "harvey",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "instance": "inst-a", "table": "orders", "query_sql": "SELECT * FROM orders" },
+  "policy": { "tables_allow": { "aurora": ["orders"] } }
+}
+
+// 09 - Table allowed (qualified inst.table) allowed
+// Expected: Allowed
+{
+  "user_id": "harvey",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "instance": "inst-b", "table": "audit", "query_sql": "SELECT * FROM audit" },
+  "policy": { "tables_allow": { "aurora": ["inst-b.audit"] } }
+}
+
+// 10 - Table qualified mismatch denied (policy points to inst-b.users; request inst-a.users)
+// Expected: Denied
+{
+  "user_id": "harvey",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "instance": "inst-a", "table": "users", "query_sql": "SELECT * FROM users" },
+  "policy": { "tables_allow": { "aurora": ["inst-b.users"] } }
+}
+
+// 11 - Columns not allowed (global) denied (requested: id, ssn; allowed: id, email)
+// Expected: Denied
+{
+  "user_id": "alex",
+  "request": { "method": "GET", "columns": ["id", "ssn"] },
+  "query": { "query_type": "SELECT", "data_source": "snowflake", "table": "customers", "query_sql": "SELECT id, ssn FROM customers" },
+  "policy": { "columns_allow": ["id", "email"] }
+}
+
+// 12 - Columns allowed (global) allowed (requested: id; allowed: id, email)
+// Expected: Allowed
+{
+  "user_id": "alex",
+  "request": { "method": "GET", "columns": ["id"] },
+  "query": { "query_type": "SELECT", "data_source": "snowflake", "table": "customers", "query_sql": "SELECT id FROM customers" },
+  "policy": { "columns_allow": ["id", "email"] }
+}
+
+// 13 - Columns allowed (per-table) allowed (orders: id, amount)
+// Expected: Allowed
+{
+  "user_id": "gretchen",
+  "request": { "method": "GET", "columns": ["id", "amount"] },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "table": "orders", "query_sql": "SELECT id, amount FROM orders" },
+  "policy": { "columns_by_table": [ { "table": "orders", "columns": ["id", "amount"] } ] }
+}
+
+// 14 - Columns not allowed (per-table) denied (requested includes discount)
+// Expected: Denied
+{
+  "user_id": "gretchen",
+  "request": { "method": "GET", "columns": ["id", "amount", "discount"] },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "table": "orders", "query_sql": "SELECT id, amount, discount FROM orders" },
+  "policy": { "columns_by_table": [ { "table": "orders", "columns": ["id", "amount"] } ] }
+}
+
+// 15 - Indeterminate: missing query_type
+// Expected: Indeterminate
+{
+  "user_id": "harvey",
+  "request": { "method": "GET" },
+  "query": { "data_source": "aurora", "table": "users", "query_sql": "SELECT 1" }
+}
+
+// 16 - Indeterminate: unknown user
+// Expected: Indeterminate
+{
+  "user_id": "tom",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "table": "users", "query_sql": "SELECT 1" }
+}
+
+// 17 - Indeterminate: missing data_source
+// Expected: Indeterminate
+{
+  "user_id": "harvey",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "table": "users", "query_sql": "SELECT 1" }
+}
+
+// 18 - Indeterminate: missing aurora query_sql
+// Expected: Indeterminate
+{
+  "user_id": "samantha",
+  "request": { "method": "GET" },
+  "query": { "query_type": "SELECT", "data_source": "aurora", "table": "users" }
+}
+
+// 19 - DynamoDB UPDATE allowed (KeyConditionExpression present)
+// Expected: Allowed
+{
+  "user_id": "jeff",
+  "request": { "method": "PUT" },
+  "query": {
+    "query_type": "UPDATE",
+    "data_source": "dynamodb",
+    "table": "orders",
+    "KeyConditionExpression": "pk = :v"
+  }
+}
+
+// 20 - S3 SELECT allowed (S3 Select)
+// Expected: Allowed
+{
+  "user_id": "benjamin",
+  "request": { "method": "GET" },
+  "query": {
+    "query_type": "SELECT",
+    "data_source": "s3",
+    "table": "logs",
+    "query_sql": "SELECT * FROM s3object s LIMIT 1"
+  }
+}
