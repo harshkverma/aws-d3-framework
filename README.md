@@ -1,4 +1,4 @@
-# AWS Multi-Database Connectivity (AWS + OPA)
+# AWS D3 (Data Debugging & Distribution) Strategy
 
 A secure, flexible API architecture on AWS that authenticates users (OIDC), authorizes requests (OPA/Rego + DynamoDB RBAC), logs queries, and connects to multiple databases (S3, DynamoDB, Aurora, Snowflake).
 
