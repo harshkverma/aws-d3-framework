@@ -2,7 +2,7 @@
 
 A secure, flexible API architecture on AWS that authenticates users (OIDC), authorizes requests (OPA/Rego + DynamoDB RBAC), logs queries, and connects to multiple databases (S3, DynamoDB, Aurora, Snowflake).
 
-![Architecture](https://github.com/harshkverma/cloud-db-integration/blob/dev/docs/Architecture.png)
+![Architecture](https://raw.githubusercontent.com/harshkverma/aws-d3-framework/refs/heads/master/docs/Architecture.png)
 
 ---
 
