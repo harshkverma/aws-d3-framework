@@ -29,7 +29,6 @@ A secure, flexible API architecture on AWS that authenticates users (OIDC), auth
 │  ├─ architecture.png
 ├─ policies/
 │  ├─ policy.rego
-│  ├─ helpers.rego
 │  ├─ data.json
 │  └─ inputs.json
 └─ README.md
